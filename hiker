@@ -1,0 +1,175 @@
+package com.vinay.carracing;
+
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.SurfaceView;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(new GameView());
+    }
+
+    class GameView extends SurfaceView implements Runnable {
+
+        Thread thread;
+        boolean running = true;
+        boolean gameOver = false;
+
+        Paint paint = new Paint();
+
+        int score = 0;
+
+        int playerX = 400;
+        int playerY = 1400;
+        int playerWidth = 150;
+        int playerHeight = 250;
+
+        int enemyX = 400;
+        int enemyY = -300;
+        int enemyWidth = 150;
+        int enemyHeight = 250;
+        int enemySpeed = 15;
+
+        public GameView() {
+            super(MainActivity.this);
+
+            thread = new Thread(this);
+            thread.start();
+        }
+
+        @Override
+        public void run() {
+
+            while (running) {
+
+                if (!gameOver) {
+
+                    enemyY += enemySpeed;
+
+                    if (enemyY > getHeight()) {
+                        enemyY = -300;
+                        score++;
+                    }
+
+                    Rect playerRect = new Rect(
+                            playerX,
+                            playerY,
+                            playerX + playerWidth,
+                            playerY + playerHeight
+                    );
+
+                    Rect enemyRect = new Rect(
+                            enemyX,
+                            enemyY,
+                            enemyX + enemyWidth,
+                            enemyY + enemyHeight
+                    );
+
+                    if (Rect.intersects(playerRect, enemyRect)) {
+                        gameOver = true;
+                    }
+                }
+
+                drawGame();
+
+                try {
+                    Thread.sleep(16);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private void drawGame() {
+
+            if (!getHolder().getSurface().isValid())
+                return;
+
+            Canvas canvas =
+                    getHolder().lockCanvas();
+
+            canvas.drawColor(Color.DKGRAY);
+
+            // Player
+            paint.setColor(Color.BLUE);
+            canvas.drawRect(
+                    playerX,
+                    playerY,
+                    playerX + playerWidth,
+                    playerY + playerHeight,
+                    paint
+            );
+
+            // Enemy
+            paint.setColor(Color.RED);
+            canvas.drawRect(
+                    enemyX,
+                    enemyY,
+                    enemyX + enemyWidth,
+                    enemyY + enemyHeight,
+                    paint
+            );
+
+            // Score
+            paint.setColor(Color.WHITE);
+            paint.setTextSize(70);
+
+            canvas.drawText(
+                    "Score: " + score,
+                    50,
+                    100,
+                    paint
+            );
+
+            if (gameOver) {
+
+                paint.setTextSize(120);
+
+                canvas.drawText(
+                        "GAME OVER",
+                        100,
+                        800,
+                        paint
+                );
+            }
+
+            getHolder().unlockCanvasAndPost(canvas);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+
+            if (event.getAction() ==
+                    MotionEvent.ACTION_DOWN) {
+
+                if (event.getX() <
+                        getWidth() / 2) {
+
+                    playerX -= 150;
+
+                } else {
+
+                    playerX += 150;
+                }
+
+                // Road boundaries
+                if (playerX < 0)
+                    playerX = 0;
+
+                if (playerX > getWidth() - playerWidth)
+                    playerX = getWidth() - playerWidth;
+            }
+
+            return true;
+        }
+    }
+}
